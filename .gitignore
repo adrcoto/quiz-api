@@ -1,5 +1,6 @@
 .idea/
 node_modules/
+cert/
 npm-debug.log
 .env
 .DS_Store
