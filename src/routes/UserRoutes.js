@@ -1,9 +1,14 @@
 const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
+const crypto = require('crypto');
+
 
 const User = require('../models/User');
+const Token = require('../models/RegisterToken');
 const auth = require('../middleware/Auth');
+
+const { sendConfirmationMail } = require('../services/Email');
 
 const router = new express.Router();
 
@@ -27,6 +32,7 @@ const upload = multer({
 
 
 router.get('/', (req, res) => {
+    console.log(req.protocol, req.headers.host);
     res.send('Oke');
 });
 
@@ -42,11 +48,49 @@ router.post('/users', async (req, res) => {
 
     try {
         await user.save();
-        const token = await user.generateAuthToken();
-        res.status(201).send({ user, token });
+        // const token = await user.generateAuthToken();
+
+        const confirmToken = new Token({
+            _userId: user._id,
+            token: crypto.randomBytes(16).toString('hex')
+        });
+        confirmToken.save();
+        sendConfirmationMail(user.email, user.name, req.protocol, req.headers.host, confirmToken.token);
+        res.status(201).send({ user });
     } catch (error) {
         res.status(400).send(error);
     }
+});
+
+
+/**
+ * Confirm user
+ */
+router.get('/confirmation/:token', async (req, res) => {
+    const token = await Token.findOne({ token: req.params.token });
+    if (!token) {
+        return res.status(400).send({
+            type: 'not-verified',
+            msg: 'We were unable to find a valid token. Your token my have expired.'
+        });
+    }
+
+    const user = await User.findOne({ _id: token._userId });
+    if (!user) {
+        return res.status(404).send({ msg: 'We were unable to find a user for this token.' });
+    }
+
+    if (user.isVerified) {
+        return res.status(400).send({
+            type: 'already-verified',
+            msg: 'This user has already been verified.'
+        });
+    }
+
+    user.isVerified = true;
+    user.save();
+
+    res.send('The account has been verified. You may log in');
 });
 
 /**
@@ -55,8 +99,14 @@ router.post('/users', async (req, res) => {
 router.post('/users/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password);
-        const token = await user.generateAuthToken();
 
+        if (!user.isVerified) {
+            return res.status(401).send({
+                type: 'not-verified',
+                msg: 'Your account has not been verified. Check your mail inbox'
+            });
+        }
+        const token = await user.generateAuthToken();
         res.send({ user, token });
     } catch (error) {
         res.status(400).send(error.message);

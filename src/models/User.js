@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const passwordMinLength = parseInt(process.env.PASSWORD_MIN_LENGTH);
 
-
 /**
  * Defining user schema
  */
@@ -42,11 +41,19 @@ const userSchema = new mongoose.Schema({
         enum: ['user', 'admin'],
         default: 'user'
     },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
     tokens: [{
         token: {
             type: String,
             required: true
-        }
+        },
+        passwordReset: {
+            type: String
+        },
+        passwordResetExpires: Date
     }],
     avatar: {
         type: Buffer
@@ -97,9 +104,8 @@ userSchema.statics.findByCredentials = async (email, password) => {
     if (!user) {
         throw new Error('Unable to login');
     }
-
     if (!await bcrypt.compare(password, user.password)) {
-        throw new Error('Unable to login');
+        throw new Error('Unable to login.');
     }
 
     return user;
