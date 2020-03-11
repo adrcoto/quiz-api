@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const passwordMinLength = parseInt(process.env.PASSWORD_MIN_LENGTH);
+
 
 /**
  * Defining user schema
@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Choose a password'],
         trim: true,
-        minlength: [passwordMinLength, `Password must contain at least ${passwordMinLength} characters`],
+        minlength: [6, 'Password must contain at least 6 characters'],
         validate(value) {
             if (value.toLowerCase().trim().includes('password')) {
                 throw new Error('Password cannot contain \'password\'');
@@ -68,11 +68,11 @@ const userSchema = new mongoose.Schema({
  */
 userSchema.methods.toJSON = function () {
     const userObject = this.toObject();
-    delete userObject.role;
     delete userObject.password;
     delete userObject.tokens;
     delete userObject.__v;
     delete userObject.avatar;
+    delete userObject.isVerified;
 
     return userObject;
 };
@@ -119,8 +119,19 @@ userSchema.pre('save', async function (next) {
     if (this.isModified('password')) {
         this.password = await bcrypt.hash(this.password, 8);
     }
-
     next();
+});
+
+
+/**
+ * Middleware for detecting duplicate account
+ */
+userSchema.post('save', function (error, doc, next) {
+    if (error.name === 'MongoError' && error.code === 11000) {
+        next(new Error('There is already an account associated with this email'));
+    } else {
+        next(error);
+    }
 });
 
 
