@@ -6,7 +6,7 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: config.SMTP_LOGIN,
         pass: config.SMTP_PASSWORD
-    }
+    },
 });
 
 
