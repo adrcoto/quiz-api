@@ -16,6 +16,12 @@ const sendConfirmationMail = (email, name, protocol, host, token) => {
         to: email,
         subject: `Welcome to ${config.NAME}`,
         html: `<h2>Hello ${name},</h2><p>Please verify your account by clicking the following button</p><a href="${protocol}://${host}/confirmation/${token}">Verify</a>`
+    }, function (error, info) {
+        if (error) {
+            console.log(error);
+        } else {
+            console.log('Email sent: ' + info.response);
+        }
     });
 };
 
@@ -26,7 +32,7 @@ const sendWelcomeAdminMail = (email, name) => {
         to: email,
         subject: `Welcome to ${config.NAME} team`,
         text: `Hello ${name},\n\n We\'re glad to have you on board.`
-    })
+    });
 };
 
 module.exports = {

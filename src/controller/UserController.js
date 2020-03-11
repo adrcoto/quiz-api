@@ -35,7 +35,7 @@ module.exports.upload = multer({
  */
 module.exports.register = async (req, res) => {
     try {
-        const user = new User(req.body);
+        /*const user = new User(req.body);
         await user.save();
         // const token = await user.generateAuthToken();
 
@@ -46,10 +46,15 @@ module.exports.register = async (req, res) => {
 
         await confirmToken.save();
         sendConfirmationMail(user.email, user.name, req.protocol, req.headers.host, confirmToken.token);
-        res.status(201).send({ type: 'success', user });
+        res.status(201).send({ type: 'success', user });*/
+        const object = {
+            protocol: req.protocol,
+            host: req.headers.host
+        };
+        res.send(object);
     } catch (error) {
-        // res.status(400).send(error.message);
-        returnError(res, 'validation-error', 400, error);
+        res.status(400).send(error.message);
+        // returnError(res, 'validation-error', 400, error);
     }
 };
 
