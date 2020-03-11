@@ -1,12 +1,15 @@
 const { config } = require('../../config/app');
 const nodemailer = require('nodemailer');
 
+
 const transporter = nodemailer.createTransport({
-    service: config.SMTP_HOST,
+    host: config.SMTP_HOST,
+    port: 2525,
     auth: {
         user: config.SMTP_LOGIN,
         pass: config.SMTP_PASSWORD
     },
+    logger: true
 });
 
 
